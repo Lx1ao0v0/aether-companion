@@ -4,7 +4,7 @@
  *
  * 把通用工单信封翻译成 kling 子命令（两阶段）：
  *   1) text_to_video / image_to_video 提交（不带 --poll，秒级返回 generation_id + 上传参考图）
- *   2) query_tasks --poll <N> 长轮询直到出片（N = config.kling.pollSeconds，默认 600s）
+ *   2) query_tasks --poll <N> 长轮询直到出片（N = config.kling.pollSeconds，默认 1800s，上限 7200s）
  * 注：可灵 image_to_video 只接受**单张** --image（多图是 image_to_image 的能力），故图生视频只用首帧。
  * 模型动态发现：model_hint（video_kling_byo）对 kling 无意义，必须 who_am_i 取 available_models，
  * 或用 config.kling.defaultModel 覆盖。--model 必填无默认。
@@ -74,14 +74,17 @@ function _pushArg(args, spec, name, value) {
   args.push('--' + name, v);
 }
 
-/** 可灵 CLI --poll N 的单位是**秒**（非次数）。视频常需数分钟，低于 600 易误报失败。 */
+/** 可灵 CLI --poll N 的单位是**秒**（非次数）。视频渲染常需数分钟，**排队高峰时更久**，
+ *  低于 600 易在仍排队时误报失败。默认 1800（30 分钟），上限 7200（2 小时）。
+ *  注：--poll 一到终态（成功/失败）即返回，N 只是"最长等多久"，调大不拖慢正常出片。
+ *  服务端心跳每 30s 续 claim（heartbeat_byo_task +1800s），故拉长本轮询不会被僵尸回收误杀。 */
 function _pollSeconds(cfg) {
-  const n = Number((cfg.kling && cfg.kling.pollSeconds) || 600);
+  const n = Number((cfg.kling && cfg.kling.pollSeconds) || 1800);
   if (!Number.isFinite(n) || n < 600) {
-    log.warn(`kling.pollSeconds=${cfg.kling && cfg.kling.pollSeconds} 过短（视频常需数分钟），已钳制为 600`);
-    return 600;
+    log.warn(`kling.pollSeconds=${cfg.kling && cfg.kling.pollSeconds} 过短（视频排队常需数十分钟），已钳制为 1800`);
+    return 1800;
   }
-  return Math.min(Math.floor(n), 3600);
+  return Math.min(Math.floor(n), 7200);
 }
 
 async function _submitAndPoll({ bin, submitArgs, pollSec, label, onProgress, onLine }) {

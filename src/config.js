@@ -15,9 +15,12 @@ const DEFAULTS = {
   deskpetToken: '',
   pollIntervalMs: 5000,
   heartbeatIntervalMs: 30000,
-  maxConcurrent: 1,
-  kling: { binary: 'kling', defaultModel: '', pollSeconds: 600 },
-  jimeng: { binary: 'dreamina', defaultModelVersion: 'seedance1.0', pollSeconds: 600 },
+  // 默认允许 2 条本地任务并行（多节点场景小步并行）；单节点批量×N 前端本就 await 串行、
+  // 不吃并发。上限钳 4（loadConfig）。真正的天花板是用户可灵账号自身的并发/额度，
+  // 服务端另有单用户在途软闸（_BYO_MAX_INFLIGHT）兜底，双向防止失控。
+  maxConcurrent: 2,
+  kling: { binary: 'kling', defaultModel: '', pollSeconds: 1800 },
+  jimeng: { binary: 'dreamina', defaultModelVersion: 'seedance1.0', pollSeconds: 1800 },
 };
 
 function _readJson(file) {

@@ -32,7 +32,7 @@ function friendlyError(rawMsg) {
     return '本地账户额度不足：请前往官网充值后重试';
   }
   if (/超时|timeout|timed out|query_tasks|已等待 \d+s|poll/.test(low) || /未完成.*已等待/.test(msg)) {
-    return '本地生成还在排队或渲染中，等待时间不够；请稍后重试，或在管家 config.json 把 kling.pollSeconds 调大（单位：秒，建议 600 起）';
+    return '本地生成还在排队或渲染中，等待时间不够；请稍后重试，或在管家 config.json 把 kling.pollSeconds 调大（单位：秒，默认 1800，可调至 7200）';
   }
   if (/参考图/.test(msg)) {
     return stripTech(msg) || '参考图准备失败，请确认图片有效后重试';

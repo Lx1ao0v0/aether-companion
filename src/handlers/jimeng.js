@@ -21,7 +21,7 @@ async function run({ job, files, cfg, onProgress }) {
   const p = (job && job.params) || {};
   const prompt = (p.prompt || '').trim();
   const action = job.action === 'image2video' ? 'image2video' : 'text2video';
-  const poll = String((cfg.jimeng && cfg.jimeng.pollSeconds) || 30);
+  const poll = String((cfg.jimeng && cfg.jimeng.pollSeconds) || 1800);
   const mv = (cfg.jimeng && cfg.jimeng.defaultModelVersion) || '';
   const duration = String(p.duration || '5').replace(/[^0-9]/g, '') || '5';
   const ratio = p.aspect_ratio || '16:9';
