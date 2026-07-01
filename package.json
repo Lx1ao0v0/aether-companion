@@ -1,0 +1,19 @@
+{
+  "name": "aether-companion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ARTVAS 自带视频 CLI 本地桥（BYO）· 通用 harness + 可灵/即梦 handler · ADR-0149",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "aether-companion": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "doctor": "node src/index.js --doctor",
+    "once": "node src/index.js --once"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,17 @@
+{
+  "serverUrl": "https://your-artvas-domain.com",
+  "deskpetToken": "在 ARTVAS 个人中心 → 桌面助手 里复制你的 Deskpet Token 粘到这里",
+  "pollIntervalMs": 5000,
+  "heartbeatIntervalMs": 30000,
+  "maxConcurrent": 1,
+  "kling": {
+    "binary": "kling",
+    "defaultModel": "",
+    "pollSeconds": 600
+  },
+  "jimeng": {
+    "binary": "dreamina",
+    "defaultModelVersion": "seedance1.0",
+    "pollSeconds": 600
+  }
+}

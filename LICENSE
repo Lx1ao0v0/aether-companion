@@ -1,0 +1,42 @@
+ARTVAS Companion — Source-Available License
+Copyright (c) 2026 ARTVAS. All rights reserved.
+
+This source code is made publicly available for TRANSPARENCY and AUDITABILITY:
+anyone may read, inspect, and verify it, so that users who run this companion on
+their own machine can confirm exactly what it does with their local environment
+and credentials.
+
+1. Permission granted
+   You are granted a non-exclusive, non-transferable, royalty-free right to:
+   (a) view, read, and audit the source code; and
+   (b) download, build, and run the software on machines you control, for the
+       sole purpose of connecting to the official ARTVAS service.
+
+2. Restrictions (all other rights reserved)
+   Without prior written permission from ARTVAS, you may NOT:
+   (a) redistribute, publish, sublicense, sell, or host the software or any
+       modified version of it;
+   (b) create and distribute derivative works based on this software;
+   (c) use this software, in whole or in part, to build, operate, or promote a
+       product or service that competes with ARTVAS;
+   (d) remove or alter any copyright, trademark, or attribution notices.
+
+   Making private modifications for your own personal use of the official ARTVAS
+   service is permitted.
+
+3. No trademark license
+   This license does not grant rights to the "ARTVAS" name, logos, or trademarks.
+
+4. No warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+   OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+--------------------------------------------------------------------------------
+Note: If you (ARTVAS) later prefer fully permissive open source, replace the text
+above with the standard MIT License — the companion has no proprietary internals
+and MIT would maximize trust at negligible cost.

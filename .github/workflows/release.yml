@@ -1,0 +1,82 @@
+name: Release Companion
+
+# 给公开仓库打一个 v* tag（如 v0.1.0）推上去即自动：
+#   1) node --check 全量语法校验
+#   2) 打包成 aether-companion.zip（剔除 config.json / .lock / node_modules / .github）
+#   3) 生成 SHA256SUMS 供用户核验
+#   4) 创建同名 Release 并挂上产物
+# 也可在 Actions 页手动 workflow_dispatch 指定 tag 触发。
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify JS syntax (node --check)
+        run: |
+          set -e
+          for f in $(find src -name '*.js'); do
+            node --check "$f"
+          done
+          echo "all src/*.js parse OK"
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build zip + checksum
+        run: |
+          set -e
+          STAGE="/tmp/pkg/aether-companion"
+          mkdir -p "$STAGE"
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude 'config.json' \
+            --exclude '.companion.lock' \
+            --exclude '.gitignore' \
+            --exclude '*.log' \
+            --exclude '*.tmp' \
+            ./ "$STAGE/"
+          cd /tmp/pkg
+          zip -r -X aether-companion.zip aether-companion >/dev/null
+          sha256sum aether-companion.zip | tee SHA256SUMS
+          cp aether-companion.zip "$GITHUB_WORKSPACE/aether-companion.zip"
+          cp SHA256SUMS "$GITHUB_WORKSPACE/SHA256SUMS"
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh release create "${{ steps.tag.outputs.name }}" \
+            aether-companion.zip SHA256SUMS \
+            --title "Aether Companion ${{ steps.tag.outputs.name }}" \
+            --notes "自带视频管家（BYO）发布包。下载后用 \`sha256sum aether-companion.zip\` 与 SHA256SUMS 比对校验和；源码即本仓库，可逐行审计，安装与使用见 README。"
