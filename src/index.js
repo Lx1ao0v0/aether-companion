@@ -167,6 +167,31 @@ function _bindArgsFromArgv(argv) {
   return out;
 }
 
+/**
+ * 交互式首启但还没连上账号时：**不退出**，开着窗口轮询 config.json，
+ * 等网页「一键连接本机管家」（深链 bind 会 writeConfigPatch 落盘）写入连接码后自动继续。
+ * 这是关键 UX：用户选了"用网页一键连接"后，窗口应停在这里等待，而不是报错退出让人以为失败。
+ * @returns {Promise<object>} 变为有效后的 config
+ */
+function _waitForConnection() {
+  log.ok('本机管家已就绪，只差把账号「连上」这一步。');
+  log.info('请回到 ARTVAS 网页 → 个人中心 → 设置 → 点「一键连接本机管家」。');
+  log.info('保持本窗口开着即可，连上后会自动继续、无需关闭（想中止按 Ctrl+C）。');
+  log.info('（等待连接中…）');
+  return new Promise((resolve) => {
+    const timer = setInterval(() => {
+      try {
+        const next = loadConfig();
+        if (validateConfig(next).length === 0) {
+          clearInterval(timer);
+          log.ok('已收到连接码，正在继续启动…');
+          resolve(next);
+        }
+      } catch (_) { /* 半写入/瞬时错误：下次轮询再看 */ }
+    }, 2000);
+  });
+}
+
 async function main() {
   if (!_checkNodeVersion()) { process.exitCode = 1; return; }
   const argv = process.argv.slice(2);
@@ -200,19 +225,35 @@ async function main() {
     if (ok) cfg = loadConfig(); // 重读，让后续启动用新连接码
   }
 
-  // 配置未就绪：交互式 → 进向导（装可灵 / 登录 / 连接）；非交互（协议唤起 / 无控制台）→ 打印引导退出。
+  // 单实例锁先占坑（--once 测试模式除外）：已有存活管家在跑时本进程安静退出。
+  // bind 深链在上面已 writeConfigPatch 落盘，运行中的实例会经「等待轮询 / config 热重载」自动生效。
+  const isOnce = argv.includes('--once');
+  const lock = isOnce ? { acquired: true } : acquireSingleInstance();
+  if (!lock.acquired) {
+    log.ok(`管家已在运行（PID ${lock.holderPid}）；连接码若有更新，运行中的管家会自动生效。本窗口可关闭。`);
+    return;
+  }
+  // 锁的释放由 protocol.js 内 process 'exit' 钩子兜底（shutdown 最终走 process.exit → 触发 exit）。
+
+  // 配置未就绪：交互式 → 进向导（装可灵 / 登录）；仍缺连接码 → 不退出，开着窗口等网页「一键连接」。
+  // 非交互（协议唤起无控制台）/ --once → 打印引导后退出。
   let errs = validateConfig(cfg);
   if (errs.length) {
-    if (isInteractive()) {
+    if (isInteractive() && !isOnce) {
       const r = await runSetup(cfg);
       cfg = r.cfg || cfg;
       errs = validateConfig(cfg);
     }
     if (errs.length) {
-      errs.forEach((e) => log.error('配置错误: ' + e));
-      _printSetupGuide();
-      process.exitCode = 1;
-      return;
+      if (isInteractive() && !isOnce) {
+        // 关键 UX：别退出。管家已就绪，只差把账号连上——保持窗口开着，等网页一键连接写入连接码后自动继续。
+        cfg = await _waitForConnection();
+      } else {
+        errs.forEach((e) => log.error('配置错误: ' + e));
+        _printSetupGuide();
+        process.exitCode = 1;
+        return;
+      }
     }
   } else if (isInteractive()) {
     // 配置已就绪，但仍可能没装/没登录可灵 → 顺手确保就绪（不打扰已就绪用户：内部探测后才提示）。
@@ -272,17 +313,6 @@ async function main() {
     }
     return;
   }
-
-  // 单实例锁：若已有存活管家在跑（重复双击 / 协议唤起撞上手动启动），本进程安静退出，
-  // 杜绝两个进程各跑 who_am_i、各认领工单互相打架（跨进程，klingCaps 单飞拦不住）。
-  // 注：bind 深链上面已 writeConfigPatch 落盘，运行中的实例会经 config 监听热重载（见下），
-  //     故这里第二个进程安静退出不丢失连接码更新。
-  const lock = acquireSingleInstance();
-  if (!lock.acquired) {
-    log.ok(`管家已在运行（PID ${lock.holderPid}）；连接码若有更新，运行中的管家会自动生效。本窗口退出。`);
-    return;
-  }
-  // 锁的释放由 protocol.js 内 process 'exit' 钩子兜底（shutdown 最终走 process.exit → 触发 exit）。
 
   // config.json 热重载：网页「一键连接」（或 --bind）改写连接码/服务地址后，运行中的管家
   // 无需重启即切到新账号。仅在变更生效后才动鉴权，避免空写/抖动。best-effort，监听失败不致命。
