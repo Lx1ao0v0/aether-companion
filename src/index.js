@@ -170,7 +170,7 @@ function _bindArgsFromArgv(argv) {
 async function main() {
   if (!_checkNodeVersion()) { process.exitCode = 1; return; }
   const argv = process.argv.slice(2);
-  const cfg = loadConfig();
+  let cfg = loadConfig(); // 注：下方 bind 落盘 / 向导返回后会重新赋值，必须 let（曾误用 const 致首启崩溃）
 
   if (argv.includes('--register-protocol')) {
     // 由「启动管家.bat」每次启动时幂等调用：注册 aether-companion:// 让浏览器可一键唤起。
